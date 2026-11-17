@@ -1,0 +1,77 @@
+<?php
+  // 1. Fix: Only start session if one isn't already active
+  if (session_status() === PHP_SESSION_NONE) {
+      session_start();
+  }
+  
+  include_once "connection.php"; // Use include_once to prevent redeclaring $db
+  
+  // 2. Fix: Initialize $exp at the top so the query doesn't fail
+  $exp = "expired"; // or whatever your status string is in the database
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand active">ONLINE LIBRARY MANAGEMENT SYSTEM</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li><a href="index.php">HOME</a></li>
+      <li><a href="books.php">BOOKS</a></li> <!-- Updated link to books.php -->
+    </ul>
+    
+    <?php if(isset($_SESSION['login_user'])): ?>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <a href="profile.php">
+            <div style="color: white">
+              <?php echo "Welcome, " . $_SESSION['login_user']; ?>
+            </div>
+          </a>
+        </li>
+        <li><a href="logout.php"><span class="glyphicon glyphicon-log-out"> LOGOUT</span></a></li>
+      </ul>
+    <?php else: ?>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="student_login.php"><span class="glyphicon glyphicon-log-in"> LOGIN</span></a></li>
+        <li><a href="registration.php"><span class="glyphicon glyphicon-user"> SIGN UP</span></a></li>
+      </ul>
+    <?php endif; ?>
+  </div>
+</nav>
+
+<?php
+  // 3. Fine Calculation Logic
+  if(isset($_SESSION['login_user']))
+  {
+      $day = 0;
+      // Using the $exp variable initialized at the top
+      $res = mysqli_query($db, "SELECT * FROM `issue_book` WHERE username ='$_SESSION[login_user]' AND approve ='$exp'");
+
+      if ($res) {
+          while($row = mysqli_fetch_assoc($res)) {
+              $d = strtotime($row['return']);
+              $c = strtotime(date("Y-m-d"));
+              $diff = $c - $d;
+
+              if ($diff > 0) {
+                  $day = $day + floor($diff / (60 * 60 * 24)); 
+              } 
+          }
+          $_SESSION['fine'] = $day * 0.10;
+      }
+  }
+?>
+</body>
+</html>
